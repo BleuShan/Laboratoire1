@@ -32,11 +32,9 @@ import android.app.Fragment;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.ParcelFileDescriptor;
 import android.support.annotation.Nullable;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -46,9 +44,9 @@ import android.widget.EditText;
 
 import com.bleushan.laboratoire1.R;
 
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * A {@link Fragment} subclass that represent a card view of a text document.
@@ -68,11 +66,11 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
   private static final String ARG_INTENT = "ARG_INTENT";
   private static final String ARG_REQUEST_CODE = "ARG_REQUEST_CODE";
   private static final String TAG = DocumentCardFragment.class.getSimpleName();
-  private ParcelFileDescriptor fileDescriptor;
   private EditText titleEditText;
   private EditText contentEditText;
   private Button saveButton;
-  private FileWriter documentWriter;
+  private InputStream documentIn;
+  private OutputStream documentOut;
 
   public DocumentCardFragment() {
     // Required empty public constructor
@@ -80,18 +78,18 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
 
   /**
    * Instantiate a document card fragment.
-   * <p>
+   * <p/>
    * This method has a slightly peculiar parameters when compared to the usual fragment factory
    * method. It can be passed an {@link Intent} and an {@link Integer} representing a request code
    * and the {@link DocumentCardFragment#onCreate(Bundle)} method will send it along.
-   * <p>
+   * <p/>
    * Example usage:
-   * <p>
+   * <p/>
    * {@code
    * Intent intent = new Intent(Intent.CREATE_DOCUMENT);
    * intent.setTypeAndNormalize(MimeTypeMap.getSingleton().getMimeTypeFromExtension("txt"));
    * intent.addCategory(Intent.CATEGORY_OPENABLE);
-   * <p>
+   * <p/>
    * DocumentCardFragment fragment =
    * DocumentCardFragment.newInstance(intent, DocumentCardFragment.CREATE_CODE);
    * getFragmentManager().beginTransaction().replace(R.id.main_placeholder,fragment).commit();
@@ -153,20 +151,18 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
   public void onClick(View v) {
     switch (v.getId()) {
       case R.id.document_save:
-        if ((this.contentEditText != null) && (this.documentWriter != null)) {
-          String payload = this.contentEditText.getText().toString();
+        if (this.contentEditText != null) {
           try {
-            this.documentWriter.write(payload);
-            this.documentWriter.flush();
+            this.documentOut.write(this.contentEditText.getText().toString().getBytes());
           } catch (IOException e) {
             e.printStackTrace();
           }
-          // Because, it's presented as a card, we remove the fragment from view.
-          this.getFragmentManager()
-              .beginTransaction()
-              .remove(this)
-              .commit();
         }
+        // Because, it's presented as a card, we remove the fragment from view.
+        this.getFragmentManager()
+            .beginTransaction()
+            .remove(this)
+            .commit();
         break;
     }
   }
@@ -175,8 +171,12 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
   public void onDestroy() {
     super.onDestroy();
     try {
-      if (this.fileDescriptor != null) {
-        this.fileDescriptor.close();
+      if (this.documentOut != null) {
+        this.documentOut.flush();
+        this.documentOut.close();
+      }
+      if (this.documentIn != null) {
+        this.documentIn.close();
       }
     } catch (IOException e) {
       e.printStackTrace();
@@ -188,42 +188,24 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
     Activity activity = this.getActivity();
     if ((resultCode == Activity.RESULT_OK) && (activity != null)) {
       Uri uri = data.getData();
-      if (requestCode == READ_CODE) {
-        Log.d(TAG, "OPEN File" + uri.toString());
-        try {
-          this.fileDescriptor = activity.getContentResolver().openFileDescriptor(uri, "rw");
-          if (this.fileDescriptor != null) {
-            if (this.titleEditText != null) {
-              String title = uri.getLastPathSegment();
-              title = title.substring(title.lastIndexOf("/") + 1);
-              this.titleEditText.setText(title);
-            }
-            if (this.contentEditText != null) {
-              this.documentWriter = new FileWriter(this.fileDescriptor.getFileDescriptor());
-              FileReader reader = new FileReader(this.fileDescriptor.getFileDescriptor());
-              if (reader.ready()) {
-                char buffer[] = new char[40];
-                while (reader.read(buffer) != -1) {
-                  this.contentEditText.append(String.valueOf(buffer));
-                }
-              }
-            }
-          }
-        } catch (IOException e) {
-          e.printStackTrace();
+      if (uri != null) {
+        if (this.titleEditText != null) {
+          String title = uri.getLastPathSegment();
+          title = title.substring(title.lastIndexOf("/") + 1);
+          this.titleEditText.setText(title);
         }
-      } else if (requestCode == CREATE_CODE) {
-        Log.d(TAG, "CREATE File" + uri.toString());
+        String mode = (requestCode == CREATE_CODE) ? "rwt" : "rw";
         try {
-          this.fileDescriptor = activity.getContentResolver().openFileDescriptor(uri, "rwt");
-          if (this.fileDescriptor != null) {
-            if (this.titleEditText != null) {
-              String title = uri.getLastPathSegment();
-              title = title.substring(title.lastIndexOf("/") + 1);
-              this.titleEditText.setText(title);
-            }
-            if (this.contentEditText != null) {
-              this.documentWriter = new FileWriter(this.fileDescriptor.getFileDescriptor());
+          if (requestCode == READ_CODE) {
+            this.documentIn = activity.getContentResolver().openInputStream(uri);
+          }
+          this.documentOut = activity.getContentResolver().openOutputStream(uri, mode);
+          if ((this.documentIn != null) && (this.contentEditText != null)) {
+            byte buffer[] = new byte[this.documentIn.available()];
+            while (this.documentIn.read(buffer) != -1) {
+              for (byte b : buffer) {
+                this.contentEditText.append(String.valueOf((char) b));
+              }
             }
           }
         } catch (IOException e) {

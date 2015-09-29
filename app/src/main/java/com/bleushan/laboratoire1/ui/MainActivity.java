@@ -38,6 +38,9 @@ import android.webkit.MimeTypeMap;
 
 import com.bleushan.laboratoire1.R;
 
+/**
+ * An {@link AppCompatActivity} subclass that serves as the main entry point for the application.
+ */
 public class MainActivity extends AppCompatActivity {
 
   private static final String TAG = MainActivity.class.getSimpleName();

@@ -1,6 +1,6 @@
 /*
- * TextDocumentProvider.java
- * Laboratoire 1
+ * TextDocumentsProvider.java
+ * Laboratoire1
  *
  * Copyright (c) 2015. Philippe Lafontaine
  * All rights reserved.
@@ -51,11 +51,11 @@ import java.io.IOException;
  * A subclass of {@link DocumentsProvider} that provides access to text document represented as
  * files located in the device public external storage document folder. Been a document provider,
  * it manages those document and exposes them to the Android system for sharing.
- * <p>
+ * <p/>
  * This implementation is heavily inspired, at times copied, from the
  * <a href="http://bit.ly/1KTocwr">StorageProvider</a> sample code. It, therefore, inherits some of
  * its quirks. For example: we don't, yet, index our documents or store document metadata in a
- * database. The reason being that our documents are file based the querying thes filesystem
+ * database. The reason being that our documents are file based the querying the filesystem
  * directly fits most of our needs. The main improvement a database could provide is an easier
  * file indexing mechanism and a "cleaner" way to query the documents metadata at the cost of a
  * more complicated codebase.
@@ -64,6 +64,7 @@ import java.io.IOException;
  * @see Environment#DIRECTORY_DOCUMENTS
  */
 public class TextDocumentsProvider extends DocumentsProvider {
+
   private static final String TAG = TextDocumentsProvider.class.getSimpleName();
   /**
    * Use these as the default columns to return information about a root if no specific
@@ -232,7 +233,7 @@ public class TextDocumentsProvider extends DocumentsProvider {
 
   /**
    * Gets the document ID for a given File object.
-   * <p>
+   * <p/>
    * This implementation is copied/inspired from the
    * <a href="http://bit.ly/1KTocwr">StorageProvider</a> sample code. Therefore it has the same
    * flaws. Ideally, you would store the filepath and the document ID in key-value pair fashion a
@@ -261,7 +262,7 @@ public class TextDocumentsProvider extends DocumentsProvider {
 
   /**
    * Gets the File object for a given document ID.
-   * <p>
+   * <p/>
    * This implementation is copied/inspired from the
    * <a href="http://bit.ly/1KTocwr">StorageProvider</a> sample code. Therefore it has the same
    * flaws. Ideally, you would store the filepath and the document ID in key-value pair fashion a
@@ -284,7 +285,7 @@ public class TextDocumentsProvider extends DocumentsProvider {
     if (splitIndex < 0) {
       throw new FileNotFoundException("Missing root for " + documentId);
     } else {
-      final String path = documentId.substring(splitIndex + 1);
+      String path = documentId.substring(splitIndex + 1);
       target = new File(target, path);
       if (!target.exists()) {
         throw new FileNotFoundException("Missing file for " + documentId + " at " + target);
@@ -295,7 +296,7 @@ public class TextDocumentsProvider extends DocumentsProvider {
 
   /**
    * A helper method for creating a cursor that contains filesystem metadata.
-   * <p>
+   * <p/>
    * This is a kind of cleanup version of includeFile from the
    * <a href="http://bit.ly/1KTocwr">StorageProvider</a> sample code. The original was using a
    * side effecting function parameter and it wasn't quite handling file directories.
