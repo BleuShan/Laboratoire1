@@ -1,6 +1,6 @@
 <!--
   ~ fragment_document_card.xml
-  ~ Laboratoire 1
+  ~ Laboratoire1
   ~
   ~ Copyright (c) 2015. Philippe Lafontaine
   ~ All rights reserved.
@@ -64,7 +64,8 @@
 				android:id="@+id/document_content_edit_text"
 				android:layout_width="fill_parent"
 				android:layout_height="wrap_content"
-				android:hint="@string/app.document.content.hint"/>
+				android:hint="@string/app.document.content.hint"
+				android:nextFocusForward="@id/document_content_edit_text"/>
 		</android.support.design.widget.TextInputLayout>
 		<Button
 			android:id="@+id/document_save"
