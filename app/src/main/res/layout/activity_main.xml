@@ -1,0 +1,67 @@
+<!--
+  ~ activity_main.xml
+  ~ Laboratoire 1
+  ~
+  ~ Copyright (c) 2015. Philippe Lafontaine
+  ~ All rights reserved.
+  ~
+  ~ Redistribution and use in source and binary forms, with or without
+  ~ modification, are permitted provided that the following conditions are met:
+  ~     * Redistributions of source code must retain the above copyright
+  ~       notice, this list of conditions and the following disclaimer.
+  ~     * Redistributions in binary form must reproduce the above copyright
+  ~       notice, this list of conditions and the following disclaimer in the
+  ~       documentation and/or other materials provided with the distribution.
+  ~
+  ~ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+  ~ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+  ~ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  ~ DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+  ~ DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+  ~ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  ~ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+  ~ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+  ~ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+  ~ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  -->
+<android.support.design.widget.CoordinatorLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	tools:context=".ui.MainActivity">
+	<android.support.design.widget.AppBarLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:fitsSystemWindows="true"
+		android:theme="?actionBarTheme">
+		<android.support.v7.widget.Toolbar
+			android:id="@+id/main_toolbar"
+			android:layout_width="match_parent"
+			android:layout_height="?actionBarSize"
+			app:layout_scrollFlags="scroll|enterAlways"
+			app:popupTheme="?actionBarPopupTheme"
+			app:title="@string/app.name"/>
+	</android.support.design.widget.AppBarLayout>
+	<android.support.v4.widget.NestedScrollView
+		android:id="@+id/main_content_container"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:background="@color/grey_300"
+		app:layout_behavior="@string/appbar_scrolling_view_behavior">
+		<FrameLayout
+			android:id="@+id/main_placeholder"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:layout_gravity="center">
+			<TextView
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_gravity="center"
+				android:gravity="center"
+				android:text="@string/app.info.nofile"
+				android:textAppearance="@style/TextAppearance.AppCompat.Display2"/>
+		</FrameLayout>
+	</android.support.v4.widget.NestedScrollView>
+</android.support.design.widget.CoordinatorLayout>

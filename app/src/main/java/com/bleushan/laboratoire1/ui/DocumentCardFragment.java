@@ -1,0 +1,229 @@
+/*
+ * DocumentCardFragment.java
+ * Laboratoire 1
+ *
+ * Copyright (c) 2015. Philippe Lafontaine
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package com.bleushan.laboratoire1.ui;
+
+import android.app.Activity;
+import android.app.Fragment;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+
+import com.bleushan.laboratoire1.R;
+
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+
+/**
+ * A {@link Fragment} subclass.
+ * Use the {@link DocumentCardFragment#newInstance} factory method to
+ * create an instance of this fragment.
+ */
+public class DocumentCardFragment extends Fragment implements OnClickListener, TextWatcher {
+
+  /**
+   * Request code constant that's passed for
+   * {@link Fragment#startActivityForResult(Intent, int)} for reading a document
+   */
+  public static final int READ_CODE = 42;
+  /**
+   * Request code constant that's passed for
+   * {@link Fragment#startActivityForResult(Intent, int)} for creating a document
+   */
+  public static final int CREATE_CODE = 69;
+  private static final String ARG_INTENT = "ARG_INTENT";
+  private static final String ARG_REQUEST_CODE = "ARG_REQUEST_CODE";
+  private static final String TAG = DocumentCardFragment.class.getSimpleName();
+  private ParcelFileDescriptor fileDescriptor;
+  private EditText titleEditText;
+  private EditText contentEditText;
+  private Button saveButton;
+  private FileWriter documentWriter;
+
+  public DocumentCardFragment() {
+    // Required empty public constructor
+  }
+
+  /**
+   * Instantiate a document card fragment.
+   *
+   * @param intent
+   *   The intent to be sent by the fragment.
+   * @param requestCode
+   *   The requestCode for the document.
+   *
+   * @return A new Fragment
+   */
+  public static DocumentCardFragment newInstance(Intent intent, int requestCode) {
+    Bundle bundle = new Bundle();
+    DocumentCardFragment fragment = new DocumentCardFragment();
+    bundle.putParcelable(ARG_INTENT, intent);
+    bundle.putInt(ARG_REQUEST_CODE, requestCode);
+    fragment.setArguments(bundle);
+    return fragment;
+  }
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    Bundle args = this.getArguments();
+    if (args != null) {
+      Intent intent = args.getParcelable(ARG_INTENT);
+      int requestCode = args.getInt(ARG_REQUEST_CODE, 0);
+      if (intent != null) {
+        this.startActivityForResult(intent, requestCode);
+      }
+    }
+  }
+
+  @Override
+  public View onCreateView(LayoutInflater inflater,
+                           ViewGroup container,
+                           Bundle savedInstanceState) {
+    // Inflate the layout for this fragment
+    View view = inflater.inflate(R.layout.fragment_document_card, container, false);
+    this.titleEditText = ((EditText) view.findViewById(R.id.document_title_edit_text));
+    this.contentEditText = ((EditText) view.findViewById(R.id.document_content_edit_text));
+    if (this.contentEditText != null) {
+      this.contentEditText.addTextChangedListener(this);
+    }
+    this.saveButton = ((Button) view.findViewById(R.id.document_save));
+    if (this.saveButton != null) {
+      this.saveButton.setOnClickListener(this);
+    }
+    return view;
+  }
+
+  @Override
+  public void onClick(View v) {
+    switch (v.getId()) {
+      case R.id.document_save:
+        if ((this.contentEditText != null) && (this.documentWriter != null)) {
+          String payload = this.contentEditText.getText().toString();
+          try {
+            this.documentWriter.write(payload);
+            this.documentWriter.flush();
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+          this.getFragmentManager()
+              .beginTransaction()
+              .remove(this)
+              .commit();
+        }
+        break;
+    }
+  }
+
+  @Override
+  public void onDestroy() {
+    super.onDestroy();
+    try {
+      if (this.fileDescriptor != null) {
+        this.fileDescriptor.close();
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Override
+  public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    Activity activity = this.getActivity();
+    if ((resultCode == Activity.RESULT_OK) && (activity != null)) {
+      Uri uri = data.getData();
+      if (requestCode == READ_CODE) {
+        Log.d(TAG, "OPEN File" + uri.toString());
+        try {
+          this.fileDescriptor = activity.getContentResolver().openFileDescriptor(uri, "rw");
+          if (this.fileDescriptor != null) {
+            if (this.titleEditText != null) {
+              String title = uri.getLastPathSegment();
+              title = title.substring(title.lastIndexOf("/") + 1);
+              this.titleEditText.setText(title);
+            }
+            if (this.contentEditText != null) {
+              this.documentWriter = new FileWriter(this.fileDescriptor.getFileDescriptor());
+              FileReader reader = new FileReader(this.fileDescriptor.getFileDescriptor());
+              if (reader.ready()) {
+                char buffer[] = new char[40];
+                while (reader.read(buffer) != -1) {
+                  this.contentEditText.append(String.valueOf(buffer));
+                }
+              }
+            }
+          }
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      } else if (requestCode == CREATE_CODE) {
+        Log.d(TAG, "CREATE File" + uri.toString());
+        try {
+          this.fileDescriptor = activity.getContentResolver().openFileDescriptor(uri, "rwt");
+          if (this.fileDescriptor != null) {
+            if (this.titleEditText != null) {
+              String title = uri.getLastPathSegment();
+              title = title.substring(title.lastIndexOf("/") + 1);
+              this.titleEditText.setText(title);
+            }
+            if (this.contentEditText != null) {
+              this.documentWriter = new FileWriter(this.fileDescriptor.getFileDescriptor());
+            }
+          }
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+  }
+
+  @Override
+  public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+  }
+
+  @Override
+  public void onTextChanged(CharSequence s, int start, int before, int count) {
+  }
+
+  @Override
+  public void afterTextChanged(Editable s) {
+    if (this.saveButton != null) {
+      this.saveButton.setEnabled(!s.toString().isEmpty());
+    }
+  }
+}
