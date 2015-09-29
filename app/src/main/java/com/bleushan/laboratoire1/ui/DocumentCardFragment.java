@@ -29,12 +29,16 @@ package com.bleushan.laboratoire1.ui;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -42,11 +46,15 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 
+import com.bleushan.laboratoire1.BuildConfig;
 import com.bleushan.laboratoire1.R;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Calendar;
 
 /**
  * A {@link Fragment} subclass that represent a card view of a text document.
@@ -68,9 +76,9 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
   private static final String TAG = DocumentCardFragment.class.getSimpleName();
   private EditText titleEditText;
   private EditText contentEditText;
+  private String initialFileContent = "";
   private Button saveButton;
-  private InputStream documentIn;
-  private OutputStream documentOut;
+  private Uri fileUri;
 
   public DocumentCardFragment() {
     // Required empty public constructor
@@ -151,11 +159,23 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
   public void onClick(View v) {
     switch (v.getId()) {
       case R.id.document_save:
-        if (this.contentEditText != null) {
-          try {
-            this.documentOut.write(this.contentEditText.getText().toString().getBytes());
-          } catch (IOException e) {
-            e.printStackTrace();
+        if ((this.contentEditText != null) && (this.titleEditText != null)) {
+          String filename = this.titleEditText.getText().toString();
+          Activity activity = this.getActivity();
+          if (activity != null) {
+            ContentResolver contentResolver = activity.getContentResolver();
+            if (contentResolver != null) {
+              try (OutputStream out = contentResolver.openOutputStream(this.fileUri)) {
+                if (out != null) {
+                  out.write(this.contentEditText.getText().toString().getBytes());
+                  this.writeLog(filename, "File saved");
+                }
+              } catch (IOException e) {
+                e.printStackTrace();
+              } finally {
+                this.writeLog(filename, "File closed");
+              }
+            }
           }
         }
         // Because, it's presented as a card, we remove the fragment from view.
@@ -168,45 +188,38 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
   }
 
   @Override
-  public void onDestroy() {
-    super.onDestroy();
-    try {
-      if (this.documentOut != null) {
-        this.documentOut.flush();
-        this.documentOut.close();
-      }
-      if (this.documentIn != null) {
-        this.documentIn.close();
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
-
-  @Override
   public void onActivityResult(int requestCode, int resultCode, Intent data) {
     Activity activity = this.getActivity();
     if ((resultCode == Activity.RESULT_OK) && (activity != null)) {
-      Uri uri = data.getData();
-      if (uri != null) {
+      this.fileUri = data.getData();
+      if (this.fileUri != null) {
         if (this.titleEditText != null) {
-          String title = uri.getLastPathSegment();
-          title = title.substring(title.lastIndexOf("/") + 1);
-          this.titleEditText.setText(title);
-        }
-        String mode = (requestCode == CREATE_CODE) ? "rwt" : "rw";
-        try {
+          String fileName = this.fileUri.getLastPathSegment();
+          fileName = fileName.substring(fileName.lastIndexOf("/") + 1);
+          this.titleEditText.setText(fileName);
+          String message = null;
           if (requestCode == READ_CODE) {
-            this.documentIn = activity.getContentResolver().openInputStream(uri);
+            message = "File opened";
+          } else if (requestCode == CREATE_CODE) {
+            message = "File created";
           }
-          this.documentOut = activity.getContentResolver().openOutputStream(uri, mode);
-          if ((this.documentIn != null) && (this.contentEditText != null)) {
-            byte buffer[] = new byte[this.documentIn.available()];
-            while (this.documentIn.read(buffer) != -1) {
+          if (message != null) {
+            this.writeLog(fileName, message);
+          }
+        }
+        // Because we target KitKat or higher and we compile with Java 7, we can use
+        // try-with-resource statements. This will close documentIn automatically.
+        try (InputStream documentIn = activity.getContentResolver().openInputStream(this.fileUri)) {
+          if ((documentIn != null) &&
+              (this.contentEditText != null) &&
+              (documentIn.available() != 0)) {
+            byte buffer[] = new byte[documentIn.available()];
+            while (documentIn.read(buffer) != -1) {
               for (byte b : buffer) {
                 this.contentEditText.append(String.valueOf((char) b));
               }
             }
+            this.initialFileContent = this.contentEditText.getText().toString();
           }
         } catch (IOException e) {
           e.printStackTrace();
@@ -225,8 +238,46 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
 
   @Override
   public void afterTextChanged(Editable s) {
-    if (this.saveButton != null) {
-      this.saveButton.setEnabled(!s.toString().isEmpty());
+    if (this.initialFileContent != null) {
+      if (s.toString().compareToIgnoreCase(this.initialFileContent) != 0) {
+        if (this.saveButton != null) {
+          this.saveButton.setEnabled(!s.toString().isEmpty());
+        }
+        if (this.titleEditText != null) {
+          this.writeLog(this.titleEditText.getText().toString(), "File modified");
+        }
+      }
+    }
+  }
+
+  /**
+   * Helper method  to log file operation writes to a log file.
+   *
+   * @param filename
+   *   The name of the file that's been operated on
+   * @param message
+   *   The message to add to the log.
+   */
+  private void writeLog(@NonNull String filename, @NonNull String message) {
+    Context cxt = this.getActivity();
+    if (cxt != null) {
+      File logFile = new File(cxt.getCacheDir().getPath(), "log.txt");
+      if (logFile.canWrite()) {
+        // This is to ensure that the log file is never bigger than 1 MB
+        boolean writeNew = (logFile.length() <= (1024 * 1024));
+        try (FileOutputStream logOutputStream =
+               new FileOutputStream(logFile, writeNew)) {
+          String logMessage = Calendar.getInstance().getTime().toString() + " " + filename + ": " +
+                              message + "\n";
+          if (BuildConfig.DEBUG) {
+            Log.d(TAG, "writeLog called.");
+            Log.d(TAG, "message: " + logMessage);
+          }
+          logOutputStream.write(logMessage.getBytes());
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
     }
   }
 }
