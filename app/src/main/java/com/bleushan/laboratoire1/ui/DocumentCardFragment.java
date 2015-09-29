@@ -1,6 +1,6 @@
 /*
  * DocumentCardFragment.java
- * Laboratoire 1
+ * Laboratoire1
  *
  * Copyright (c) 2015. Philippe Lafontaine
  * All rights reserved.
@@ -33,6 +33,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
+import android.support.annotation.Nullable;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -50,20 +51,18 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 /**
- * A {@link Fragment} subclass.
- * Use the {@link DocumentCardFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * A {@link Fragment} subclass that represent a card view of a text document.
+ * Use the {@link DocumentCardFragment#newInstance} factory method to create an instance of this
+ * fragment.
  */
 public class DocumentCardFragment extends Fragment implements OnClickListener, TextWatcher {
 
   /**
-   * Request code constant that's passed for
-   * {@link Fragment#startActivityForResult(Intent, int)} for reading a document
+   * Request code constant that's passed for reading a document
    */
   public static final int READ_CODE = 42;
   /**
-   * Request code constant that's passed for
-   * {@link Fragment#startActivityForResult(Intent, int)} for creating a document
+   * Request code constant that's passed for creating a document
    */
   public static final int CREATE_CODE = 69;
   private static final String ARG_INTENT = "ARG_INTENT";
@@ -81,18 +80,39 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
 
   /**
    * Instantiate a document card fragment.
+   * <p>
+   * This method has a slightly peculiar parameters when compared to the usual fragment factory
+   * method. It can be passed an {@link Intent} and an {@link Integer} representing a request code
+   * and the {@link DocumentCardFragment#onCreate(Bundle)} method will send it along.
+   * <p>
+   * Example usage:
+   * <p>
+   * {@code
+   * Intent intent = new Intent(Intent.CREATE_DOCUMENT);
+   * intent.setTypeAndNormalize(MimeTypeMap.getSingleton().getMimeTypeFromExtension("txt"));
+   * intent.addCategory(Intent.CATEGORY_OPENABLE);
+   * <p>
+   * DocumentCardFragment fragment =
+   * DocumentCardFragment.newInstance(intent, DocumentCardFragment.CREATE_CODE);
+   * getFragmentManager().beginTransaction().replace(R.id.main_placeholder,fragment).commit();
+   * }
    *
    * @param intent
-   *   The intent to be sent by the fragment.
+   *   The intent to be sent by the fragment. Can be null
    * @param requestCode
-   *   The requestCode for the document.
+   *   The request code to be passed along the intent
    *
-   * @return A new Fragment
+   * @return A shiny new {@link DocumentCardFragment}
+   *
+   * @see DocumentCardFragment#READ_CODE
+   * @see DocumentCardFragment#CREATE_CODE
    */
-  public static DocumentCardFragment newInstance(Intent intent, int requestCode) {
+  public static DocumentCardFragment newInstance(@Nullable Intent intent, int requestCode) {
     Bundle bundle = new Bundle();
     DocumentCardFragment fragment = new DocumentCardFragment();
-    bundle.putParcelable(ARG_INTENT, intent);
+    if (intent != null) {
+      bundle.putParcelable(ARG_INTENT, intent);
+    }
     bundle.putInt(ARG_REQUEST_CODE, requestCode);
     fragment.setArguments(bundle);
     return fragment;
@@ -141,6 +161,7 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
           } catch (IOException e) {
             e.printStackTrace();
           }
+          // Because, it's presented as a card, we remove the fragment from view.
           this.getFragmentManager()
               .beginTransaction()
               .remove(this)

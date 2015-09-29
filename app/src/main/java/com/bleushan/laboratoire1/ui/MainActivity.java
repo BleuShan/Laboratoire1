@@ -1,6 +1,6 @@
 /*
  * MainActivity.java
- * Laboratoire 1
+ * Laboratoire1
  *
  * Copyright (c) 2015. Philippe Lafontaine
  * All rights reserved.
@@ -66,13 +66,12 @@ public class MainActivity extends AppCompatActivity {
     // as you specify a parent activity in AndroidManifest.xml.
     Toolbar toolbar = ((Toolbar) this.findViewById(R.id.main_toolbar));
     Intent intent = new Intent();
-    // This sets the intent to filter 
+    // This sets the intent so that the document picker shows only *.txt files.
     intent.setTypeAndNormalize(MimeTypeMap.getSingleton().getMimeTypeFromExtension("txt"));
     intent.addCategory(Intent.CATEGORY_OPENABLE);
     switch (item.getItemId()) {
       case R.id.action_newFile:
         intent.setAction(Intent.ACTION_CREATE_DOCUMENT);
-        DocumentCardFragment.newInstance(intent, DocumentCardFragment.CREATE_CODE);
         this.getFragmentManager()
             .beginTransaction()
             .replace(R.id.main_placeholder,
