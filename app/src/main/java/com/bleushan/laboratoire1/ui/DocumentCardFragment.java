@@ -41,17 +41,14 @@ import android.support.design.widget.Snackbar;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.TextView.OnEditorActionListener;
 
 import com.bleushan.laboratoire1.BuildConfig;
 import com.bleushan.laboratoire1.R;
@@ -74,7 +71,7 @@ import java.util.Calendar;
  * fragment.
  */
 public class DocumentCardFragment extends Fragment implements OnClickListener, TextWatcher,
-                                                              OnEditorActionListener {
+                                                              OnFocusChangeListener {
 
   /**
    * Request code constant that's passed for reading a document
@@ -106,7 +103,7 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
 
   /**
    * Instantiate a document card fragment.
-   * <p/>
+   * <p>
    * This method has a slightly peculiar parameters when compared to the usual fragment factory
    * method. It can be passed an {@link Integer} representing a request code for an document action
    * and the fragment will manage sending the {@link Intent} to the {@link ContentResolver}
@@ -154,7 +151,7 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
     View view = inflater.inflate(R.layout.fragment_document_card, container, false);
     this.titleEditText = ((EditText) view.findViewById(R.id.document_title_edit_text));
     if (this.titleEditText != null) {
-      this.titleEditText.setOnEditorActionListener(this);
+      this.titleEditText.setOnFocusChangeListener(this);
     }
     this.contentEditText = ((EditText) view.findViewById(R.id.document_content_edit_text));
     if (this.contentEditText != null) {
@@ -178,7 +175,9 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
           if (activity != null) {
             try (OutputStream out = activity.getContentResolver().openOutputStream(this.fileUri)) {
               if (out != null) {
-                //
+                // Check if the uri is file://something because we create files using Java's raw
+                // file api. We should use the request code instead of this hack around.
+                // FIXME: Cleanup the fragment file management API.
                 if (this.fileUri.getScheme().equals(ContentResolver.SCHEME_FILE)) {
                   this.writeLog(fileName, "File created");
                 }
@@ -341,23 +340,21 @@ public class DocumentCardFragment extends Fragment implements OnClickListener, T
   }
 
   @Override
-  public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-    if ((v.getId() == R.id.document_title_edit_text) &&
-        (((actionId == EditorInfo.IME_ACTION_NEXT) ||
-          (actionId == EditorInfo.IME_ACTION_DONE)) ||
-         ((event != null) &&
-          (event.getKeyCode() == KeyEvent.KEYCODE_ENTER)))) {
-      StringBuilder textBuilder = new StringBuilder(v.getText());
-      if (textBuilder.lastIndexOf(".txt") == -1) {
-        textBuilder.append(".txt");
+  public void onFocusChange(View v, boolean hasFocus) {
+    if ((v.getId() == R.id.document_title_edit_text) && (!hasFocus) && (this.fileUri == null)) {
+      // Type safe cast.
+      EditText editText = (v instanceof EditText) ? ((EditText) v) : null;
+      if (editText != null) {
+        StringBuilder textBuilder = new StringBuilder(editText.getText());
+        if (textBuilder.lastIndexOf(".txt") == -1) {
+          textBuilder.append(".txt");
+        }
+        if (this.hasDocumentDir) {
+          this.fileUri = Uri.fromFile(new File(this.documentsDir, textBuilder.toString()));
+        }
+        editText.setText(textBuilder.toString());
       }
-      if ((this.hasDocumentDir) && (this.fileUri == null)) {
-        this.fileUri = Uri.fromFile(new File(this.documentsDir, textBuilder.toString()));
-      }
-      v.setText(textBuilder.toString());
     }
-    // always return false so the default action works out.
-    return false;
   }
 
 }
