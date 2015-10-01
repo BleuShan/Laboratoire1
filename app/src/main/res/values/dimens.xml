@@ -1,6 +1,6 @@
 <!--
   ~ dimens.xml
-  ~ Laboratoire 1
+  ~ Laboratoire1
   ~
   ~ Copyright (c) 2015. Philippe Lafontaine
   ~ All rights reserved.
@@ -29,8 +29,8 @@
 	<dimen name="activity_horizontal_margin">16dp</dimen>
 	<dimen name="activity_vertical_margin">16dp</dimen>
 	<dimen name="appbar_elevation">4dp</dimen>
-	<dimen name="cardview_width_large">280dp</dimen>
 	<dimen name="cardview_default_max_elevation">8dp</dimen>
 	<dimen name="cardview_default_vertical_padding">24dp</dimen>
 	<dimen name="cardview_default_horizontal_padding">8dp</dimen>
+  <dimen name="cardview_default_horizontal_content_margin">8dp</dimen>
 </resources>

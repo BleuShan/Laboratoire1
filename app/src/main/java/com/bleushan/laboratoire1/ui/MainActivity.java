@@ -27,14 +27,12 @@
 
 package com.bleushan.laboratoire1.ui;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.webkit.MimeTypeMap;
 
 import com.bleushan.laboratoire1.R;
 
@@ -68,25 +66,19 @@ public class MainActivity extends AppCompatActivity {
     // automatically handle clicks on the Home/Up button, so long
     // as you specify a parent activity in AndroidManifest.xml.
     Toolbar toolbar = ((Toolbar) this.findViewById(R.id.main_toolbar));
-    Intent intent = new Intent();
-    // This sets the intent so that the document picker shows only *.txt files.
-    intent.setTypeAndNormalize(MimeTypeMap.getSingleton().getMimeTypeFromExtension("txt"));
-    intent.addCategory(Intent.CATEGORY_OPENABLE);
     switch (item.getItemId()) {
       case R.id.action_newFile:
-        intent.setAction(Intent.ACTION_CREATE_DOCUMENT);
         this.getFragmentManager()
             .beginTransaction()
             .replace(R.id.main_placeholder,
-                     DocumentCardFragment.newInstance(intent, DocumentCardFragment.CREATE_CODE))
+                     DocumentCardFragment.newInstance(DocumentCardFragment.CREATE_CODE))
             .commit();
         return true;
       case R.id.action_openFile:
-        intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
         this.getFragmentManager()
             .beginTransaction()
             .replace(R.id.main_placeholder,
-                     DocumentCardFragment.newInstance(intent, DocumentCardFragment.READ_CODE))
+                     DocumentCardFragment.newInstance(DocumentCardFragment.READ_CODE))
             .commit();
         return true;
       case R.id.action_settings:

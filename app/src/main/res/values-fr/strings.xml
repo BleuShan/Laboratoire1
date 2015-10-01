@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ strings.xml
-  ~ Laboratoire 1
+  ~ Laboratoire1
   ~
   ~ Copyright (c) 2015. Philippe Lafontaine
   ~ All rights reserved.
@@ -35,4 +35,5 @@
 	<string name="app.info.nofile">Aucun fichier</string>
 	<string name="app.document.content.hint">Contenu du Document</string>
 	<string name="app.document.title.hint">Titre</string>
+	<string name="app.error.fileread">Désolé, le fichier n\'a pu être lu…</string>
 </resources>
